@@ -3,11 +3,12 @@ import { useAppStatus } from 'context/useAppStatus'
 import { useSavedArmies } from 'context/useSavedArmies'
 import { useTheme } from 'context/useTheme'
 import UpdateNameButton from 'components/input/savedArmies/update_name_btn'
+import { LocalLoadedArmy } from 'utils/localStore'
 
 const LoadedArmyHeader: React.FC = () => {
   const { isOffline } = useAppStatus()
-  const { loadedArmy } = useSavedArmies()
   const { theme } = useTheme()
+  const loadedArmy = LocalLoadedArmy.get()
 
   if (!loadedArmy) return null
 

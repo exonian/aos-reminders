@@ -11,6 +11,7 @@ import GenericModal from 'components/page/genericModal'
 import GenericButton from 'components/input/generic_button'
 import { TSupportedFaction } from 'meta/factions'
 import { TSavePdfType } from 'types/pdf'
+import { LocalLoadedArmy } from 'utils/localStore'
 
 interface IModalComponentProps {
   modalIsOpen: boolean
@@ -30,8 +31,8 @@ const getDefaultName = (name: string) => {
 export const DownloadPDFModal: React.FC<IModalComponentProps> = props => {
   const { closeModal, modalIsOpen, factionName, pdf } = props
   const { isOnline } = useAppStatus()
-  const { loadedArmy } = useSavedArmies()
   const { theme } = useTheme()
+  const loadedArmy = LocalLoadedArmy.get()
   const defaultName = getDefaultName(loadedArmy ? loadedArmy.armyName : factionName)
   const [fileName, setFileName] = useState(defaultName)
   const [processing, setProcessing] = useState(false)

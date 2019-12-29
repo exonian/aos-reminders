@@ -9,6 +9,7 @@ import { centerContentClass } from 'theme/helperClasses'
 import { componentWithSize } from 'utils/mapSizesToProps'
 import Spinner from 'components/helpers/spinner'
 import { handleParseFile } from 'components/input/importPdf/parseFile'
+import { LocalLoadedArmy } from 'utils/localStore'
 import {
   AZYR,
   BATTLESCRIBE,
@@ -27,7 +28,6 @@ interface IDropzoneProps {
 export const ImportDropzoneComponent: React.FC<IDropzoneProps> = props => {
   const { handleDrop, isMobile } = props
   const { isOnline } = useAppStatus()
-  const { setLoadedArmy } = useSavedArmies()
   const { theme } = useTheme()
 
   const [isDone, setIsDone] = useState(false)
@@ -51,7 +51,7 @@ export const ImportDropzoneComponent: React.FC<IDropzoneProps> = props => {
   }
 
   const startProcessing = () => {
-    setLoadedArmy(null)
+    LocalLoadedArmy.clear()
     setIsDone(false)
     setIsError(false)
     setIsProcessing(true)

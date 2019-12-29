@@ -13,6 +13,7 @@ import { SUPPORTED_FACTIONS, TSupportedFaction } from 'meta/factions'
 import { TUnits, IArmy } from 'types/army'
 import { IStore } from 'types/store'
 import { ISavedArmy } from 'types/savedArmy'
+import { LocalLoadedArmy } from 'utils/localStore'
 
 const AddAllyButton = lazy(() => import('./add_ally_btn'))
 const ClearArmyButton = lazy(() => import('./clear_army_btn'))
@@ -52,8 +53,9 @@ const ToolbarComponent = (props: IToolbarProps) => {
     updateAllyArmy,
   } = props
   const { isGameMode, isOnline } = useAppStatus()
-  const { loadedArmy, armyHasChanges, setLoadedArmy } = useSavedArmies()
+  const { armyHasChanges } = useSavedArmies()
   const { isSubscribed, isActive } = useSubscription()
+  const loadedArmy = LocalLoadedArmy.get()
 
   const { hasChanges, changedKeys } = useMemo(() => armyHasChanges(currentArmy), [
     currentArmy,
@@ -101,9 +103,9 @@ const ToolbarComponent = (props: IToolbarProps) => {
       resetRealmscapeStore()
       resetSelections()
       logClick('ClearArmy')
-      setLoadedArmy(null)
+      LocalLoadedArmy.clear()
     },
-    [resetAllySelections, resetRealmscapeStore, resetSelections, setLoadedArmy]
+    [resetAllySelections, resetRealmscapeStore, resetSelections]
   )
 
   return (

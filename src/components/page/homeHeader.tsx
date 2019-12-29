@@ -16,6 +16,7 @@ import { LoadingHeader } from 'components/helpers/suspenseFallbacks'
 import { SelectOne } from 'components/input/select'
 import { LinkNewTab } from 'components/helpers/link'
 import { SUPPORTED_FACTIONS, TSupportedFaction } from 'meta/factions'
+import { LocalLoadedArmy } from 'utils/localStore'
 
 const Navbar = lazy(() => import('./navbar'))
 
@@ -52,8 +53,9 @@ const JumbotronComponent: React.FC<IJumbotronProps> = props => {
     setFactionName,
   } = props
   const { isOnline, isGameMode } = useAppStatus()
-  const { setLoadedArmy, getFavoriteFaction, favoriteFaction, loadedArmy } = useSavedArmies()
+  const { getFavoriteFaction, favoriteFaction } = useSavedArmies()
   const { theme } = useTheme()
+  const loadedArmy = LocalLoadedArmy.get()
 
   // Get our user's favorite faction from localStorage/API
   useEffect(() => {
@@ -70,7 +72,7 @@ const JumbotronComponent: React.FC<IJumbotronProps> = props => {
   }, [favoriteFaction, setFactionName])
 
   const setValue = withSelectOne((value: string | null) => {
-    setLoadedArmy(null)
+    LocalLoadedArmy.clear()
     resetSelections()
     resetRealmscapeStore()
     resetAllySelections()

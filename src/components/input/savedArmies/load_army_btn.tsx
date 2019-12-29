@@ -3,6 +3,7 @@ import { useSavedArmies } from 'context/useSavedArmies'
 import { useAppStatus } from 'context/useAppStatus'
 import { logEvent } from 'utils/analytics'
 import { addArmyToStore } from 'utils/loadArmy/loadArmyHelpers'
+import { LocalLoadedArmy } from 'utils/localStore'
 import { ISavedArmyFromApi } from 'types/savedArmy'
 
 interface ILoadButtonProps {
@@ -11,12 +12,11 @@ interface ILoadButtonProps {
 
 export const LoadArmyBtn: React.FC<ILoadButtonProps> = ({ army }) => {
   const { isOnline } = useAppStatus()
-  const { setLoadedArmy } = useSavedArmies()
 
   const handleLoadClick = async e => {
     e.preventDefault()
     if (isOnline) logEvent(`LoadArmy-${army.factionName}`)
-    setLoadedArmy({ id: army.id, armyName: army.armyName })
+    LocalLoadedArmy.set({ id: army.id, armyName: army.armyName })
     addArmyToStore(army)
   }
 

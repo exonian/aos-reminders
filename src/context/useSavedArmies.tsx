@@ -9,7 +9,7 @@ import { SubscriptionApi } from 'api/subscriptionApi'
 import { logEvent } from 'utils/analytics'
 import { isValidFactionName, prepareArmy, prepareArmyForS3 } from 'utils/armyUtils'
 import { addArmyToStore } from 'utils/loadArmy/loadArmyHelpers'
-import { LocalUserName, LocalFavoriteFaction, LocalSavedArmies } from 'utils/localStore'
+import { LocalUserName, LocalFavoriteFaction, LocalSavedArmies, LocalLoadedArmy } from 'utils/localStore'
 import { unTitleCase } from 'utils/textUtils'
 import { isDev } from 'utils/env'
 import { TSupportedFaction } from 'meta/factions'
@@ -17,7 +17,6 @@ import { ISavedArmy, ISavedArmyFromApi } from 'types/savedArmy'
 import { ICurrentArmy } from 'types/army'
 import { IImportedArmy } from 'types/import'
 
-type TLoadedArmy = { id: string; armyName: string } | null
 type THasChanges = (currentArmy: ICurrentArmy) => { hasChanges: boolean; changedKeys: string[] }
 
 interface ISavedArmiesContext {
@@ -25,14 +24,12 @@ interface ISavedArmiesContext {
   deleteSavedArmy: (id: string) => Promise<void>
   favoriteFaction: TSupportedFaction | null
   getFavoriteFaction: () => Promise<void>
-  loadedArmy: { id: string; armyName: string } | null
   loadSavedArmies: () => Promise<void>
   reloadArmy: () => Promise<void>
   saveArmy: (army: ISavedArmy) => Promise<void>
   saveArmyToS3: (army: IImportedArmy | ISavedArmy | ICurrentArmy) => Promise<void>
   savedArmies: ISavedArmyFromApi[]
   saveLink: (army: ISavedArmy) => Promise<string | null>
-  setLoadedArmy: (army: TLoadedArmy) => void
   updateArmy: (id: string, data: { [key: string]: any }) => Promise<void>
   updateArmyName: (id: string, armyName: string) => Promise<void>
   updateFavoriteFaction: (factionName: string | null) => Promise<void>
@@ -54,12 +51,13 @@ const SavedArmiesProvider: React.FC = ({ children }) => {
   const { user } = useAuth0()
   const { subscription, isActive } = useSubscription()
   const [savedArmies, setSavedArmies] = useState<ISavedArmyFromApi[]>([])
-  const [loadedArmy, setLoadedArmy] = useState<TLoadedArmy>(null)
   const [favoriteFaction, setFavoriteFaction] = useState<TSupportedFaction | null>(null)
   const [waitingForApi, setWaitingForApi] = useState(false)
 
   const armyHasChanges: THasChanges = useCallback(
     currentArmy => {
+      const loadedArmy = LocalLoadedArmy.get()
+      return { hasChanges: false, changedKeys: [] }
       if (!loadedArmy || !currentArmy) return { hasChanges: false, changedKeys: [] }
 
       const original = savedArmies.find(x => x.id === loadedArmy.id) as ISavedArmyFromApi
@@ -84,7 +82,7 @@ const SavedArmiesProvider: React.FC = ({ children }) => {
 
       return { hasChanges: changedKeys.length > 0, changedKeys }
     },
-    [loadedArmy, savedArmies]
+    [savedArmies]
   )
 
   const loadSavedArmies = useCallback(async () => {
@@ -107,7 +105,7 @@ const SavedArmiesProvider: React.FC = ({ children }) => {
         const { body } = await PreferenceApi.createSavedArmy({ userName: user.email, ...savedArmy })
         saveArmyToS3(savedArmy)
         await loadSavedArmies()
-        setLoadedArmy({ id: body.id, armyName: body.armyName })
+        LocalLoadedArmy.set({ id: body.id, armyName: body.armyName })
       } catch (err) {
         console.error(err)
       }
@@ -130,13 +128,14 @@ const SavedArmiesProvider: React.FC = ({ children }) => {
     async (id: string) => {
       try {
         await PreferenceApi.deleteItem(id, user.email)
-        if (loadedArmy && loadedArmy.id === id) setLoadedArmy(null)
+        const loadedArmy = LocalLoadedArmy.get()
+        if (loadedArmy && loadedArmy.id === id) LocalLoadedArmy.clear()
         await loadSavedArmies()
       } catch (err) {
         console.error(err)
       }
     },
-    [loadSavedArmies, user, loadedArmy]
+    [loadSavedArmies, user]
   )
 
   const updateArmy = useCallback(
@@ -158,20 +157,21 @@ const SavedArmiesProvider: React.FC = ({ children }) => {
         const payload = { armyName, userName: user.email }
         await PreferenceApi.updateItem(id, payload)
         await loadSavedArmies()
-        if (loadedArmy) setLoadedArmy({ id, armyName })
+        if (LocalLoadedArmy.get()) LocalLoadedArmy.set({ id, armyName })
       } catch (err) {
         console.error(err)
       }
     },
-    [loadSavedArmies, user, loadedArmy]
+    [loadSavedArmies, user]
   )
 
   const reloadArmy = useCallback(async () => {
+    const loadedArmy = LocalLoadedArmy.get()
     if (!loadedArmy) return
     const fullLoadedArmy = savedArmies.find(x => x.id === loadedArmy.id) as ISavedArmyFromApi
     addArmyToStore(fullLoadedArmy)
     logEvent(`ReloadArmy-${fullLoadedArmy.factionName}`)
-  }, [loadedArmy, savedArmies])
+  }, [savedArmies])
 
   const getFavoriteFaction = useCallback(async () => {
     try {
@@ -235,14 +235,12 @@ const SavedArmiesProvider: React.FC = ({ children }) => {
         deleteSavedArmy,
         favoriteFaction,
         getFavoriteFaction,
-        loadedArmy,
         loadSavedArmies,
         reloadArmy,
         saveArmy,
         saveArmyToS3,
         savedArmies,
         saveLink,
-        setLoadedArmy,
         updateArmy,
         updateArmyName,
         updateFavoriteFaction,

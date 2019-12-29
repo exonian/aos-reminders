@@ -9,6 +9,7 @@ import { SavedArmyTable } from 'components/input/savedArmies/saved_army_table'
 import { DeleteArmyModal } from 'components/input/savedArmies/delete_army_modal'
 import UpdateNameButton from 'components/input/savedArmies/update_name_btn'
 import { ISavedArmyFromApi } from 'types/savedArmy'
+import { LocalLoadedArmy } from 'utils/localStore'
 
 interface ISavedArmyCardProps {
   army: ISavedArmyFromApi
@@ -21,12 +22,12 @@ export const SavedArmyCard: React.FC<ISavedArmyCardProps> = props => {
 
   const [modalIsOpen, setModalIsOpen] = useState(false)
   const [border, setBorder] = useState('')
-  const { loadedArmy } = useSavedArmies()
 
   const openModal = () => setModalIsOpen(true)
   const closeModal = () => setModalIsOpen(false)
 
   useEffect(() => {
+    const loadedArmy = LocalLoadedArmy.get()
     if (!loadedArmy) {
       if (border.includes('border-success')) {
         setBorder('shadow-drop-2-center-reverse')
@@ -41,7 +42,7 @@ export const SavedArmyCard: React.FC<ISavedArmyCardProps> = props => {
       setBorder('shadow-drop-2-center-reverse')
       setTimeout(() => setBorder(''), 500)
     }
-  }, [loadedArmy, army.id, border])
+  }, [army.id, border])
 
   // TODO Make the table stuff collapsable
   return (
